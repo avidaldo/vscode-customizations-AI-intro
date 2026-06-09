@@ -9,6 +9,19 @@ user-invocable: true
 
 Propose a Conventional Commits-compliant commit message from staged changes.
 
+## When Not to Use
+
+- Do not use this skill for unstaged work you have not reviewed yet.
+- Do not use this skill when a repository enforces a different commit convention.
+
+## Why This Is a Skill
+
+This workflow is packaged as a skill rather than a plain prompt because it
+depends on reusable reference material in
+[`references/commit-examples.md`](./references/commit-examples.md). Keeping the
+examples outside the main file makes the guidance easier to maintain and keeps
+the output more stable across repeated invocations.
+
 ## Steps
 
 ### 1. Read the Staged Diff
@@ -56,7 +69,3 @@ Rules:
 ## Output
 
 2–3 candidate commit messages with a brief justification for the top recommendation.
-
-
-
-<!-- TODO: what's the point in using a md as resource for this skill? we could just have all the info here, without that other file; and in that case, this could be just a prompt, doesn't it? What if we considere that it doesn't only create the commit but launches an script that sync all up with that commit? would that be a skill? -->

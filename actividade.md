@@ -1,6 +1,6 @@
 # Material para a Formación Profesional Inicial
 
-**A04. personalizacións para programación eficiente con IA**
+**A04. Personalizacións para programación eficiente con IA**
 
 ---
 
@@ -10,16 +10,15 @@
 * **Familia profesional:** Informática e Comunicacións
 * **Ciclo formativo / Curso de especialización:** CE3IFC005200 - Curso de especialización en Intelixencia artificial e big data
 * **Módulo profesional:** MP5073 - Programación de intelixencia artificial
-* **Unidade didáctica:** UD 01 - Ecosistema de programación para IA
-* **Actividade:** A 04 - personalizacións para programación eficiente con IA
-* **Autor:** Alejandro Vidal Domínguez
+* **Unidade didáctica:** UD01 - Ecosistema de programación para IA
+* **Actividade:** A04 - Personalizacións para programación eficiente con IA
 * **Licenza:** © 2026 Xunta de Galicia. Creative Commons BY-NC-SA 3.0 ES
 
 **Contexto da Actividade e Duración**
 * **Módulo:** MP5073. Programación con IA (Duración: 200h)
-* **Unidade Didáctica:** UD01. Lenguajes de programación para IA (Duración total: 37 sesións de 50')
+* **Unidade Didáctica:** UD01. Ecosistema de programación para IA (Duración total: 37 sesións de 50')
 * **Actividades previas da UD:** A01 (9 sesións), A02 (9 sesións), A03 (9 sesións)
-* **Esta Actividade (A04):** personalizacións para programación eficiente con IA (Duración: 18 sesións)
+* **Esta Actividade (A04):** Personalizacións para programación eficiente con IA (Duración: 18 sesións)
 * **Descrición da A04:** Configuraranse exemplos de personalizacións de Copilot nun repositorio de proxectos de IA: instrucións, prompts, skills, axentes e hooks.
 
 ---

@@ -7,7 +7,8 @@ These rules apply across the entire project and are complemented by file-type-sp
 - This repository is a reference solution for a UD01 activity on GitHub Copilot customizations.
 - Prioritize pedagogical clarity, justified decisions, and paradigmatic examples.
 - Do not invent undocumented technical requirements.
-- All content in this `solucion/` folder must be written in English.
+- Keep the repository in English, except for `actividade.md`, which remains in Galician as the official brief.
+- Prefer reproducible examples: expose a `seed` parameter or keep a fixed seed whenever randomness is involved.
 
 ## Instruction Modularity Rule
 
@@ -34,7 +35,7 @@ jupyter nbconvert --clear-output --inplace notebooks/*.ipynb
 
 ## Dataset
 
-`data/sample.csv` — Iris dataset, 150 rows, columns: `sepal_length`, `sepal_width`, `petal_length`, `petal_width`, `species` (values: `setosa`, `versicolor`, `virginica`). Label map: setosa → 0, versicolor → 1, virginica → 2.
+`data/sample.csv` — Iris sample dataset, 40 rows, columns: `sepal_length`, `sepal_width`, `petal_length`, `petal_width`, `species` (values: `setosa`, `versicolor`, `virginica`). Label map: setosa → 0, versicolor → 1, virginica → 2.
 
 ## Internal References
 

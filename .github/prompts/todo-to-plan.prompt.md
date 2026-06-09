@@ -1,6 +1,6 @@
 ---
-description: "Scan all TODO comments in the project and produce a prioritised task plan with effort estimates, dependencies, and next actions."
-name: "TODO to Plan"
+description: "Use when turning scattered TODO comments into a prioritised implementation plan. Scans the project, estimates effort, and produces an actionable backlog document. Invoke with: /todo-to-plan, todo plan, backlog, prioritise todos, task plan."
+name: "todo-to-plan"
 tools:
   - codebase
   - search

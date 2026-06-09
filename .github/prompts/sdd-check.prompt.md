@@ -1,6 +1,6 @@
 ---
-description: "Spec-driven development check: read a specification file, identify what is still pending, and implement the missing parts."
-name: "SDD Check and Implement"
+description: "Use when comparing a specification against the codebase and closing the implementation gap. Performs a spec-driven check, identifies missing work, and updates matching files. Invoke with: /sdd-check, spec check, sdd, implement spec, gap analysis."
+name: "sdd-check"
 argument-hint: "Path to the specification file (e.g. doc/spec.md)"
 tools:
   - codebase

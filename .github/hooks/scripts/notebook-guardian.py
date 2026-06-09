@@ -1,59 +1,22 @@
 #!/usr/bin/env python3
 """
-notebook-guardian.py — PreToolUse hook for GitHub Copilot agents.
+notebook-guardian.py -- PreToolUse hook for Copilot notebook reads.
 
 Purpose
 -------
-Intercept any ``read_file`` call targeting a ``.ipynb`` file.
-Jupyter notebooks accumulate large binary outputs (plots, tensors, HTML) in
-their JSON representation.  Reading a dirty notebook wastes the agent's context
-window and can expose sensitive intermediate data.
+Intercept ``read_file`` calls targeting ``.ipynb`` files.
+Notebook JSON can contain large embedded outputs that waste context and make
+review harder. This hook blocks direct notebook reads and, when possible,
+produces a cleaned temporary copy with outputs removed.
 
-This script:
-  1. Reads a tool-call JSON object from stdin.
-  2. If the tool is ``read_file`` and the target file ends in ``.ipynb``:
-     a. Creates a temporary copy of the notebook with all outputs stripped
-        using ``jupyter nbconvert --clear-output``.
-     b. Returns a ``deny`` action so the agent does not read the original file,
-        together with a message pointing to the clean copy.
-  3. For all other tool calls, returns ``allow`` immediately.
-
-Hook contract
+Compatibility
 -------------
-Input (stdin)::
-
-    {
-        "tool": "<tool_name>",
-        "input": {
-            "file": "<path_to_file>",
-            ...
-        }
-    }
-
-Output (stdout) — allow::
-
-    {"action": "allow"}
-
-Output (stdout) — deny::
-
-    {
-        "action": "deny",
-        "message": "Outputs stripped. Read the clean notebook at: <tmppath>"
-    }
-
-Exit codes
-----------
-- 0: action written to stdout successfully.
-- 2: blocking error (shown to the user as an error message).
-- Other non-zero: warning (non-blocking).
-
-Usage
------
-Configured in ``.github/hooks/notebook-guardian.json`` as a ``PreToolUse`` hook.
-Can also be tested manually::
-
-    echo '{"tool":"read_file","input":{"file":"notebooks/01_eda_example.ipynb"}}' \\
-        | python .github/hooks/scripts/notebook-guardian.py
+The repository activity describes a simplified legacy contract using
+``{"tool": ..., "input": {"file": ...}}`` and ``{"action": ...}`` outputs.
+Current VS Code hooks use ``tool_name``, ``tool_input``, and
+``hookSpecificOutput.permissionDecision``. This script accepts both input
+formats. It emits the modern response shape for real hook execution and keeps
+the legacy output for the manual activity smoke tests.
 """
 
 import json
@@ -64,16 +27,118 @@ import tempfile
 from pathlib import Path
 
 
-def _allow() -> None:
-    """Write an allow response to stdout and exit 0."""
-    print(json.dumps({"action": "allow"}))
-    sys.exit(0)
+PRE_TOOL_USE_EVENT = "PreToolUse"
 
 
-def _deny(message: str) -> None:
-    """Write a deny response to stdout and exit 2 (blocking)."""
-    print(json.dumps({"action": "deny", "message": message}))
-    sys.exit(2)
+def _emit_json(payload: dict[str, object], exit_code: int = 0) -> None:
+    """Write a JSON response to stdout and exit.
+
+    Parameters
+    ----------
+    payload : dict[str, object]
+        JSON-serializable response payload.
+    exit_code : int, default=0
+        Process exit code to return after writing the payload.
+    """
+    print(json.dumps(payload))
+    sys.exit(exit_code)
+
+
+def _allow(legacy_mode: bool) -> None:
+    """Emit an allow response for the active hook contract.
+
+    Parameters
+    ----------
+    legacy_mode : bool
+        Whether the incoming payload used the simplified activity contract.
+    """
+    if legacy_mode:
+        _emit_json({"action": "allow"})
+
+    _emit_json(
+        {
+            "hookSpecificOutput": {
+                "hookEventName": PRE_TOOL_USE_EVENT,
+                "permissionDecision": "allow",
+            }
+        }
+    )
+
+
+def _deny(message: str, legacy_mode: bool, additional_context: str | None) -> None:
+    """Emit a deny response for the active hook contract.
+
+    Parameters
+    ----------
+    message : str
+        User-visible reason for denying the tool call.
+    legacy_mode : bool
+        Whether the incoming payload used the simplified activity contract.
+    additional_context : str | None
+        Extra guidance for the current VS Code hook contract.
+    """
+    if legacy_mode:
+        _emit_json({"action": "deny", "message": message}, exit_code=2)
+
+    response: dict[str, object] = {
+        "hookSpecificOutput": {
+            "hookEventName": PRE_TOOL_USE_EVENT,
+            "permissionDecision": "deny",
+            "permissionDecisionReason": message,
+        }
+    }
+    if additional_context:
+        response["hookSpecificOutput"]["additionalContext"] = additional_context
+
+    _emit_json(response)
+
+
+def _extract_tool_payload(
+    payload: dict[str, object],
+) -> tuple[bool, str, dict[str, object]]:
+    """Return compatibility mode, tool name, and tool input.
+
+    Parameters
+    ----------
+    payload : dict[str, object]
+        Hook payload read from stdin.
+
+    Returns
+    -------
+    tuple[bool, str, dict[str, object]]
+        ``(legacy_mode, tool_name, tool_input)``.
+    """
+    legacy_mode = "tool" in payload or "input" in payload
+    tool_name = str(payload.get("tool_name") or payload.get("tool") or "")
+
+    raw_tool_input = payload.get("tool_input") or payload.get("input") or {}
+    if isinstance(raw_tool_input, dict):
+        tool_input = raw_tool_input
+    else:
+        tool_input = {}
+
+    return legacy_mode, tool_name, tool_input
+
+
+def _resolve_path(path_value: str, workspace_root: Path) -> Path:
+    """Resolve a possibly relative path against the workspace root.
+
+    Parameters
+    ----------
+    path_value : str
+        Path extracted from the tool input.
+    workspace_root : Path
+        Workspace root from the hook payload, or the current working directory.
+
+    Returns
+    -------
+    Path
+        Absolute path candidate.
+    """
+    candidate = Path(path_value)
+    if candidate.is_absolute():
+        return candidate
+    return workspace_root / candidate
 
 
 def _strip_outputs(notebook_path: Path) -> Path:
@@ -128,51 +193,61 @@ def _strip_outputs(notebook_path: Path) -> Path:
 
 
 def main() -> None:
-    """Entry point: read stdin, decide allow/deny."""
+    """Read stdin, apply the notebook policy, and emit a hook response."""
     try:
         raw = sys.stdin.read()
-        payload: dict = json.loads(raw)
+        payload: dict[str, object] = json.loads(raw)
     except (json.JSONDecodeError, ValueError) as exc:
-        # Malformed input — allow through and let the agent handle it
+        # Malformed input should not block unrelated tool calls.
         sys.stderr.write(f"notebook-guardian: could not parse stdin: {exc}\n")
-        _allow()
+        _allow(legacy_mode=False)
 
-    tool_name: str = payload.get("tool", "")
-    tool_input: dict = payload.get("input", {})
+    legacy_mode, tool_name, tool_input = _extract_tool_payload(payload)
+    workspace_root = Path(str(payload.get("cwd") or Path.cwd()))
 
-    # Only intercept read_file calls
     if tool_name != "read_file":
-        _allow()
+        _allow(legacy_mode)
 
-    file_arg: str = tool_input.get("file", "")
-    notebook_path = Path(file_arg)
+    file_arg = str(
+        tool_input.get("filePath")
+        or tool_input.get("file")
+        or tool_input.get("path")
+        or ""
+    )
+    if not file_arg:
+        _allow(legacy_mode)
 
-    # Only intercept .ipynb files
+    notebook_path = _resolve_path(file_arg, workspace_root)
     if notebook_path.suffix.lower() != ".ipynb":
-        _allow()
-
-    # Resolve to absolute path relative to CWD if not absolute
-    if not notebook_path.is_absolute():
-        notebook_path = Path.cwd() / notebook_path
+        _allow(legacy_mode)
 
     if not notebook_path.exists():
-        # File not found — allow through; the agent will handle the missing file error
-        _allow()
+        _allow(legacy_mode)
 
+    message = (
+        f"Direct read of {notebook_path.name} was blocked to avoid loading "
+        "embedded notebook outputs into the agent context."
+    )
+    additional_context = (
+        "Clear notebook outputs before reading it, or ask for a cleaned copy."
+    )
     try:
         clean_path = _strip_outputs(notebook_path)
     except RuntimeError as exc:
-        _deny(
-            f"notebook-guardian: could not strip outputs from {notebook_path.name}. "
-            f"Error: {exc}. "
-            "Please clear outputs manually before the agent reads this notebook."
+        message = (
+            f"{message} Automatic output stripping failed: {exc}. "
+            "Please clear outputs manually before retrying."
+        )
+    else:
+        message = (
+            f"{message} A cleaned copy is available at: {clean_path}."
+        )
+        additional_context = (
+            f"Read the cleaned notebook copy at {clean_path} instead of the "
+            "original notebook path."
         )
 
-    _deny(
-        f"Direct read of a dirty notebook was blocked. "
-        f"A clean copy (outputs stripped) is available at: {clean_path}. "
-        f"Please read that path instead."
-    )
+    _deny(message, legacy_mode=legacy_mode, additional_context=additional_context)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 ---
-description: "Ask the Socratic tutor agent to review a specific function or class and provide guided feedback."
-name: "Tutor Code Review"
+description: "Use when you want the tutor agent to review a function or class through guiding questions. Routes code review to the read-only Socratic tutor instead of direct fixes. Invoke with: /tutor-review, tutor review, guided review, socratic review."
+name: "tutor-review"
 argument-hint: "Paste or reference the function/class you want reviewed"
 agent: tutor
 ---

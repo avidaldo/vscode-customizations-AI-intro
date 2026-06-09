@@ -1,207 +1,224 @@
-# Actividad A01 — Customización de GitHub Copilot para Programación de IA
+# Activity A04 — GitHub Copilot Customizations for Efficient AI Programming
 
-**Módulo:** MP5073 Programación de Inteligencia Artificial  
-**Unidad Didáctica:** UD01 — Herramientas de generación de código para IA
-
----
-
-## Introducción
-
-GitHub Copilot no es solo un asistente de autocompletado: es un sistema de IA configurable que puede adaptarse al contexto de tu proyecto, a tu estilo de código y a tu flujo de trabajo. Esta adaptación se hace mediante **primitivas de customización** — archivos especiales en la carpeta `.github/` de tu repositorio.
-
-En esta actividad vas a construir tu propio conjunto de customizaciones para un repositorio de proyectos de IA, siguiendo el modelo en `solucion/`. Al final comprenderás cuándo usar cada primitiva y por qué.
-
-**Referencia:** La solución completa está en `solucion/`. Úsala como modelo de respuesta, pero desarrolla tu propia versión desde cero.
+**Module:** MP5073 Programming of Artificial Intelligence  
+**Didactic Unit:** UD01 — Programming Ecosystem for AI
 
 ---
 
-## Tareas
+## Introduction
 
-### Tarea 1. Instrucciones globales (Layer 1 — Instructions)
+GitHub Copilot is not only an autocomplete assistant. In VS Code it is a configurable AI system that can adapt to repository context, coding conventions, and concrete development workflows. That adaptation is expressed through **customization primitives** such as instructions, prompts, skills, agents, and hooks.
 
-**Objetivo:** Configurar reglas que se apliquen a todo el repositorio sin necesidad de invocarlas explícitamente.
+In this activity you will build a coherent set of Copilot customizations for an AI-oriented repository. This repository is the reference solution. Use it to understand the expected structure and rationale, but reproduce the work in your own submission.
 
-**Enunciado:**
-
-Crea un archivo `.github/copilot-instructions.md` en tu repositorio con:
-1. Una descripción del contexto del proyecto (para qué sirve el repositorio).
-2. Al menos dos políticas transversales (por ejemplo: idioma de los comentarios, política de seeds para reproducibilidad).
-3. Una referencia a otros archivos de instrucciones específicos que crearás en los siguientes pasos.
-
-A continuación, crea instrucciones específicas para al menos **dos tipos de archivo** usando `applyTo`:
-- `.github/instructions/python.instructions.md` — normas de estilo para Python (PEP 8, type hints, docstrings).
-- `.github/instructions/notebooks.instructions.md` — normas para notebooks (estructura narrativa, limpieza de outputs).
-
-**Pistas:**
-- Compara tu `copilot-instructions.md` con el de la solución: ¿qué pone en el archivo global y qué en los archivos con `applyTo`? ¿Por qué?
-- ¿Qué pasaría si pusieras todas las reglas en el archivo global?
-
-**Autoavaliación:**
-- [ ] `copilot-instructions.md` existe y contiene al menos dos políticas transversales.
-- [ ] `python.instructions.md` tiene `applyTo: "**/*.py"` en el frontmatter YAML.
-- [ ] `notebooks.instructions.md` tiene `applyTo: "**/*.ipynb"` en el frontmatter YAML.
-- [ ] Los tres archivos están en inglés.
-- [ ] Abre un archivo `.py` en VS Code y verifica en el chat de Copilot que las reglas de Python se cargaron (aparece la instrucción en el contexto).
+If you need the official wording of the activity, read `actividade.md`, which remains in Galician. This file is the English student-facing brief for the same A04 activity.
 
 ---
 
-### Tarea 2. Prompts almacenados (Layer 2 — Prompts)
+## Tasks
 
-**Objetivo:** Crear macros de texto reutilizables para tareas frecuentes.
+### Task 1. Global and File-Specific Instructions (Layer 1 — Instructions)
 
-**Enunciado:**
+**Objective:** Configure rules that apply across the repository without explicit invocation.
 
-Crea al menos **dos prompt files** en `.github/prompts/`:
+**Instructions:**
 
-1. **`arch-review.prompt.md`** — Un prompt que analice la arquitectura del proyecto (estructura de carpetas, separación de responsabilidades, portabilidad) y produzca un informe con puntos fuertes y debilidades.
+Create a `.github/copilot-instructions.md` file with:
 
-2. **`todo-to-plan.prompt.md`** — Un prompt que escanee todos los comentarios `TODO` del proyecto y genere una lista de tareas priorizadas con estimaciones de esfuerzo.
+1. A short description of the project context.
+2. At least two cross-cutting policies, such as documentation language and seed policy for reproducibility.
+3. References to the file-specific instruction files created in the next step.
 
-**Pistas:**
-- Un prompt es una expansión de texto: no contiene lógica propia ni archivos adjuntos.
-- Usa `$input` si quieres que el prompt acepte un argumento del usuario.
-- Compara con los prompts de la solución: ¿en qué se diferencian de un skill?
+Then create file-specific instructions for at least **two file types** using `applyTo`:
 
-**Autoavaliación:**
-- [ ] Ambos archivos tienen frontmatter YAML válido (entre `---` markers).
-- [ ] El campo `description` de cada prompt describe claramente cuándo usarlo.
-- [ ] Invoca el prompt con `/arch-review` en el chat de Copilot y verifica que se ejecuta.
-- [ ] El prompt no incluye plantillas ni checklists embebidos de más de 5 líneas (si los necesita, es candidato a ser un skill).
+- `.github/instructions/python.instructions.md` — Python style rules such as PEP 8, type hints, and NumPy docstrings.
+- `.github/instructions/notebooks.instructions.md` — notebook rules such as narrative structure and clean outputs.
 
----
+**Hints:**
 
-### Tarea 3. Agente personalizado (Layer 4 — Custom Agents)
+- Compare what belongs in the global instructions file versus what belongs in an `applyTo` instruction.
+- Ask yourself what happens if every rule is loaded globally, even when the user is not editing that file type.
 
-**Objetivo:** Crear un agente con una persona y restricciones de herramientas específicas.
+**Self-assessment:**
 
-**Enunciado:**
-
-Crea un agente en `.github/agents/tutor.agent.md` que actúe como asistente docente socrático:
-- Responde preguntas con preguntas de vuelta cuando sea apropiado.
-- **Nunca escribe código directamente** — solo explica, guía y señala pistas.
-- Puede leer código y la base de código, pero NO puede editarla.
-
-El frontmatter debe listar **solo** las herramientas necesarias para un asistente de solo lectura. Omitir `editFiles` es suficiente para hacerlo constitutivamente incapaz de modificar código.
-
-**Pistas:**
-- La diferencia entre un agente personalizado y el modo Ask no es solo el prompt del sistema — es la lista de herramientas (`tools`).
-- Abre el agente `tutor` desde el selector de agentes de Copilot y pídele que "revise la función `train()` en `train_model.py`". ¿Escribe código? ¿Formula preguntas?
-- ¿Qué pasaría si añadieras `editFiles` a la lista de herramientas? ¿Sigue siendo socrático?
-
-**Autoavaliación:**
-- [ ] `tutor.agent.md` existe en `.github/agents/`.
-- [ ] El frontmatter incluye `tools` con al menos `codebase` y `search`, pero **sin** `editFiles`.
-- [ ] La `description` contiene palabras clave que permiten encontrarlo: "tutor", "review", "explain", "guide".
-- [ ] Al probarlo, el agente responde con preguntas y no produce bloques de código directos.
+- [ ] `copilot-instructions.md` exists and contains at least two cross-cutting policies.
+- [ ] `python.instructions.md` uses `applyTo: "**/*.py"` in valid YAML frontmatter.
+- [ ] `notebooks.instructions.md` uses `applyTo: "**/*.ipynb"` in valid YAML frontmatter.
+- [ ] The solution files are written in English.
+- [ ] Opening a `.py` file in VS Code causes Copilot to load the Python-specific rules automatically.
 
 ---
 
-### Tarea 4. Skills (Layer 3 — Skills)
+### Task 2. Stored Prompts (Layer 2 — Prompts)
 
-**Objetivo:** Crear al menos dos skills con activos empaquetados.
+**Objective:** Create reusable text macros for frequent tasks.
 
-**Enunciado:**
+**Instructions:**
 
-Crea las siguientes skills en `.github/skills/`:
+Create at least **two prompt files** in `.github/prompts/`:
+
+1. `arch-review.prompt.md` — a prompt that analyses project architecture and reports strengths and weaknesses.
+2. `todo-to-plan.prompt.md` — a prompt that scans project `TODO` comments and turns them into a prioritised task list with effort estimates.
+
+**Hints:**
+
+- A prompt is a text expansion. It does not contain packaged assets or its own execution logic.
+- Use `$input` if you want the prompt to accept an argument.
+- Compare these prompts with the skills in the reference solution and identify the structural difference.
+
+**Self-assessment:**
+
+- [ ] Both prompt files have valid YAML frontmatter.
+- [ ] The `description` field clearly explains when each prompt should be used.
+- [ ] `/arch-review` is invocable from Copilot chat.
+- [ ] The prompt body does not embed long templates or checklists that would justify turning it into a skill.
+
+---
+
+### Task 3. Custom Agent (Layer 4 — Custom Agents)
+
+**Objective:** Create an agent with a clear persona and explicit tool restrictions.
+
+**Instructions:**
+
+Create an agent in `.github/agents/tutor.agent.md` that behaves as a Socratic teaching assistant:
+
+- It answers with guiding questions when appropriate.
+- It **never writes code directly**. It explains, guides, and gives hints only.
+- It can read the codebase, but it cannot edit files.
+
+The frontmatter must list **only** the tools needed for a read-only assistant. Omitting `editFiles` is enough to make the agent structurally incapable of modifying code.
+
+**Hints:**
+
+- The difference between a custom agent and default Ask mode is not only the instructions; it is also the `tools` list.
+- Open the `tutor` agent from the Copilot agent picker and ask it to review `train()` in `src/train_model.py`.
+- Consider what would change if you added `editFiles` to the tools list.
+
+**Self-assessment:**
+
+- [ ] `tutor.agent.md` exists in `.github/agents/`.
+- [ ] The frontmatter includes at least `codebase` and `search`, but omits `editFiles`.
+- [ ] The `description` contains discoverable keywords such as `tutor`, `review`, `explain`, and `guide`.
+- [ ] When tested, the agent responds with questions and avoids direct code fixes.
+
+---
+
+### Task 4. Skills (Layer 3 — Skills)
+
+**Objective:** Create at least two skills with packaged assets.
+
+**Instructions:**
+
+Create the following skills in `.github/skills/`:
 
 **Skill A: `csv-eda-basica`**
-- `SKILL.md` con los pasos del procedimiento EDA (carga, calidad, estadísticas, distribuciones, preguntas iniciales).
-- Un checklist de calidad en `references/eda-checklist.md`.
-- Una plantilla de notebook en `assets/notebook-template.md`.
+
+- `SKILL.md` with the EDA procedure steps: load, quality checks, statistics, distributions, and initial questions.
+- A quality checklist in `references/eda-checklist.md`.
+- A notebook template in `assets/notebook-template.md`.
 
 **Skill B: `conventional-commit`**
-- `SKILL.md` que, a partir de un diff de git, proponga un mensaje de commit siguiendo la especificación [Conventional Commits](https://www.conventionalcommits.org/).
-- Ejemplos de commits correctos en `references/commit-examples.md`.
 
-**Pistas:**
-- El `name` del frontmatter de `SKILL.md` debe coincidir **exactamente** con el nombre de la carpeta. Un error aquí causa fallo silencioso.
-- ¿Por qué `csv-eda-basica` es un skill y no un prompt? Piensa en: ¿necesita plantillas? ¿tiene pasos secuenciales que deben ser consistentes?
-- Verifica que `/csv-eda-basica` aparece como comando slash en el chat de Copilot.
+- `SKILL.md` that proposes a commit message from a git diff using the [Conventional Commits](https://www.conventionalcommits.org/) specification.
+- Correct commit examples in `references/commit-examples.md`.
 
-**Autoavaliación:**
-- [ ] `csv-eda-basica/SKILL.md` tiene `name: csv-eda-basica` en el frontmatter (coincide con la carpeta).
-- [ ] `conventional-commit/SKILL.md` tiene `name: conventional-commit` en el frontmatter.
-- [ ] Ambas skills incluyen al menos un archivo de activos (checklist, plantilla o ejemplos).
-- [ ] Invocar `/csv-eda-basica data/sample.csv` produce un análisis estructurado o una propuesta de notebook.
-- [ ] La `description` de cada skill incluye frases que el usuario usaría naturalmente para invocarla.
+**Hints:**
 
-> **Going further (optional):** La solución incluye skills adicionales fuera del mínimo obligatorio. Prueba `/debug-python-basico`, `/spec-a-tareas` y `/dataset-card` para explorar casos de uso complementarios. Como ejercicio extra, diseña una skill nueva apoyándote en `/frontmatter-designer` y `/comparar-primitivas`.
+- The `name` field in `SKILL.md` must match the folder name **exactly**.
+- Ask yourself why `csv-eda-basica` is a skill rather than a prompt: does it need packaged assets and a stable multi-step workflow?
+- Verify that `/csv-eda-basica` appears as a slash command in Copilot chat.
+
+**Self-assessment:**
+
+- [ ] `csv-eda-basica/SKILL.md` has `name: csv-eda-basica`.
+- [ ] `conventional-commit/SKILL.md` has `name: conventional-commit`.
+- [ ] Both skills include at least one packaged asset or reference file.
+- [ ] `/csv-eda-basica data/sample.csv` produces a structured analysis or a notebook proposal.
+- [ ] Each skill `description` includes natural trigger phrases that users would actually type.
+
+**Going further (optional):**
+
+Try the additional skills included in this repository, such as `/debug-python-basico`, `/spec-a-tareas`, and `/dataset-card`. As an extension exercise, design a new skill with help from `/frontmatter-designer` and `/comparar-primitivas`.
 
 ---
 
-### Tarea 5. Hook de políticas (Layer 5 — Hooks)
+### Task 5. Policy Hook (Layer 5 — Hooks)
 
-**Objetivo:** Implementar un interceptor determinista para una política de proyecto.
+**Objective:** Implement a deterministic interceptor for a repository policy.
 
-**Enunciado:**
+**Instructions:**
 
-Crea un hook en `.github/hooks/` que intercepte las llamadas `read_file` sobre archivos `.ipynb` y proteja el contexto del agente de outputs embebidos:
+Create a hook in `.github/hooks/` that intercepts `read_file` calls on `.ipynb` files and protects the agent context from embedded notebook outputs:
 
-1. **`notebook-guardian.json`** — Configura el evento `PreToolUse` para ejecutar el script Python.
-2. **`hooks/scripts/notebook-guardian.py`** — Script Python que:
-   - Lee un JSON de stdin con el nombre de la herramienta y su argumento de archivo.
-   - Si la herramienta es `read_file` y el archivo es `.ipynb`: devuelve `{"action": "deny", "message": "..."}` con código de salida 2.
-   - En cualquier otro caso: devuelve `{"action": "allow"}` con código de salida 0.
+1. `.github/hooks/notebook-guardian.json` — configure the `PreToolUse` event to execute the Python script.
+2. `.github/hooks/scripts/notebook-guardian.py` — a Python script that reads JSON from stdin, detects notebook reads, blocks them deterministically, and allows all other reads.
 
-Puedes ampliar el script para que limpie los outputs realmente (como en la solución) o dejarlo como stub que simplemente bloquea.
+The simplified manual smoke test used in the classroom activity is:
 
-**Prueba el script** antes de integrarlo:
 ```bash
-echo '{"tool":"read_file","input":{"file":"test.ipynb"}}' | python3 hooks/scripts/notebook-guardian.py
-# Debe mostrar: {"action": "deny", "message": "..."}
+echo '{"tool":"read_file","input":{"file":"test.ipynb"}}' | python3 .github/hooks/scripts/notebook-guardian.py
+# Expected output: {"action": "deny", "message": "..."}
 
-echo '{"tool":"read_file","input":{"file":"README.md"}}' | python3 hooks/scripts/notebook-guardian.py
-# Debe mostrar: {"action": "allow"}
+echo '{"tool":"read_file","input":{"file":"README.md"}}' | python3 .github/hooks/scripts/notebook-guardian.py
+# Expected output: {"action": "allow"}
 ```
 
-**Pistas:**
-- Los hooks son lo único **determinista** en el sistema. Un script con `sys.exit(2)` siempre bloquea — no hay forma de que el modelo lo ignore.
-- ¿Por qué este requisito no se puede resolver con una instrucción que diga "no leas notebooks sucios"?
+The reference solution also supports the current VS Code `PreToolUse` contract used at runtime, where the hook returns `hookSpecificOutput.permissionDecision`.
 
-**Autoavaliación:**
-- [ ] `notebook-guardian.json` tiene el formato correcto con `"hooks": {"PreToolUse": [...]}`.
-- [ ] El script Python pasa las dos pruebas de terminal anteriores.
-- [ ] El script usa `json.loads(sys.stdin.read())` para leer el payload (no argumentos de línea de comandos).
-- [ ] La respuesta de deny tiene `sys.exit(2)` (blocking) y la de allow tiene `sys.exit(0)`.
+**Hints:**
 
----
+- Hooks are the only deterministic primitive in the customization stack.
+- A script running before the tool call cannot be ignored by the model.
+- This is why the requirement cannot be solved reliably with an instruction that says "do not read dirty notebooks".
 
-### Tarea 6. Reflexión sobre primitivas (skill meta)
+**Self-assessment:**
 
-**Objetivo:** Consolidar la comprensión de cuándo usar cada primitiva.
-
-**Enunciado:**
-
-Usando la skill `comparar-primitivas` de la solución (o la que hayas creado), responde por escrito a las siguientes preguntas en un archivo `doc/reflexion.md` en tu repositorio:
-
-1. ¿Por qué las instrucciones con `applyTo` son superiores a una sola instrucción global para proyectos con múltiples tipos de archivo?
-2. ¿Cuál es la diferencia clave entre un prompt y un skill? Da un ejemplo de caso de uso para cada uno.
-3. ¿Por qué el agente `tutor` es incapaz de editar código incluso si el usuario se lo pide explícitamente?
-4. ¿Podría el hook `notebook-guardian` implementarse como una instrucción? ¿Por qué sí o no?
-
-**Autoavaliación:**
-- [ ] `doc/reflexion.md` tiene respuestas a las cuatro preguntas.
-- [ ] Cada respuesta cita al menos un archivo concreto del proyecto como evidencia.
-- [ ] Las respuestas están escritas en inglés (consistente con el idioma del proyecto).
+- [ ] `notebook-guardian.json` uses the `{"hooks": {"PreToolUse": [...]}}` structure.
+- [ ] The Python script passes the two terminal tests above.
+- [ ] The script uses `json.loads(sys.stdin.read())` to read the payload.
+- [ ] The deny path and allow path are clearly distinguished and documented.
 
 ---
 
-## Entrega
+### Task 6. Primitive Reflection
 
-El repositorio debe contener, como mínimo:
+**Objective:** Consolidate your understanding of when to use each primitive.
+
+**Instructions:**
+
+Using the `comparar-primitivas` skill from this repository, write answers in `doc/reflexion.md` to the following questions:
+
+1. Why are `applyTo`-based instructions better than a single global instruction in heterogeneous repositories?
+2. What is the key structural difference between a prompt and a skill? Give one repository example of each.
+3. Why is the `tutor` agent unable to edit code even if the user explicitly asks it to?
+4. Could the `notebook-guardian` hook be implemented as an instruction? Why or why not?
+
+**Self-assessment:**
+
+- [ ] `doc/reflexion.md` answers all four questions.
+- [ ] Each answer cites at least one concrete file in the repository as evidence.
+- [ ] The document is written entirely in English.
+
+---
+
+## Submission
+
+At minimum, the repository should contain:
+
 - `.github/copilot-instructions.md`
-- `.github/instructions/python.instructions.md` y `notebooks.instructions.md`
-- `.github/prompts/arch-review.prompt.md` y `todo-to-plan.prompt.md`
+- `.github/instructions/python.instructions.md` and `notebooks.instructions.md`
+- `.github/prompts/arch-review.prompt.md` and `todo-to-plan.prompt.md`
 - `.github/agents/tutor.agent.md`
-- `.github/skills/csv-eda-basica/` y `conventional-commit/`
-- `.github/hooks/notebook-guardian.json` y `hooks/scripts/notebook-guardian.py`
+- `.github/skills/csv-eda-basica/` and `conventional-commit/`
+- `.github/hooks/notebook-guardian.json` and `.github/hooks/scripts/notebook-guardian.py`
 - `doc/reflexion.md`
 
-Comparte el enlace al repositorio de GitHub en el entregable de la plataforma.
+Submit the GitHub repository link through the platform deliverable.
 
-## Recursos
+## Resources
 
-- Solución de referencia: `solucion/`
-- Arquitectura de capas: [solucion/doc/capas.md](solucion/doc/capas.md)
-- Justificación de decisiones: [solucion/doc/justificacion.md](solucion/doc/justificacion.md)
-- Documentación oficial de Copilot customizations: <https://code.visualstudio.com/docs/copilot/copilot-customization>
+- [README.md](README.md) — repository overview and file map.
+- [doc/capas.md](doc/capas.md) — layer-by-layer architecture overview.
+- [doc/justificacion.md](doc/justificacion.md) — justification for the primitive choices.
+- [Official Copilot customization documentation](https://code.visualstudio.com/docs/copilot/copilot-customization).

@@ -1,6 +1,6 @@
 ---
-description: "Critical architecture and best-practices review: assess project structure, design decisions, code quality, and flag anti-patterns with actionable recommendations."
-name: "Architecture Review"
+description: "Use when reviewing the architecture of this project or one of its modules. Produces a strengths-and-weaknesses report over structure, portability, and code quality. Invoke with: /arch-review, architecture review, project review, design review."
+name: "arch-review"
 tools:
   - codebase 
   - search
