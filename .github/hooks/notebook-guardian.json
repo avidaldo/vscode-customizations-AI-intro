@@ -1,0 +1,13 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "type": "command",
+        "linux": "python3 .github/hooks/scripts/notebook-guardian.py",
+        "command": "python .github/hooks/scripts/notebook-guardian.py",
+        "timeout": 15,
+        "cwd": "."
+      }
+    ]
+  }
+}
